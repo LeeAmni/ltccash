@@ -1,0 +1,2 @@
+# ltccash
+LitecoinCash
