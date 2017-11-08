@@ -1,0 +1,151 @@
+pragma solidity ^ 0.4.16;
+
+
+контракт ForeignToken {
+    функция balanceOf (адрес _owner) public constant return (uint256);
+    передача функций (адрес _to, uint256 _value) public return (bool);
+}
+
+контракт ERC20Basic {
+
+  uint256 public totalSupply;
+  функция balanceOf (адрес who) public constant возвращает (uint256);
+  передача функций (адрес, значение uint256) public return (bool);
+  событие Передача (адрес проиндексирован, адрес проиндексирован, значение uint256);
+
+}
+
+
+
+контракт ERC20 - ERC20Basic {
+
+  надбавка функции (владелец адреса, адресный агент) public constant return (uint256);
+  функция transferFrom (адрес от, адрес до, значение uint256) public return (bool);
+  функция approve (адрес spender, uint256 value) public return (bool);
+  событие Утверждение (адрес проиндексированного владельца, указатель с индексом адреса, значение uint256);
+
+}
+
+контракт LitecoinCash - ERC20 {
+    
+    адрес владельца = msg.sender;
+
+    отображение (адрес => uint256);
+    отображение (address => mapping (address => uint256)) разрешено;
+    
+    uint256 public totalSupply = 12000000 * 10 ** 8;
+
+    function name () public constant возвращает (строка) {return "LitecoinCash"; }
+    function symbol () public constant return (string) {return "LCASH"; }
+    функция decimals () public constant returns (uint8) {return 8; }
+
+    передача события (адрес проиндексирован _from, адрес проиндексирован _to, uint256 _value);
+    событие Утверждение (адрес проиндексирован _владелец, адрес проиндексирован _spender, uint256 _value);
+
+    мероприятие DistrFinished ();
+
+    bool public distributionFinished = false;
+
+    модификатор canDistr () {
+    требуют (distributionFinished!);
+    _;
+    }
+
+    функция LitecoinCash () public {
+        owner = msg.sender;
+        балансы [msg.sender] = totalSupply;
+    }
+
+    только модификаторOwner { 
+        require (msg.sender == owner);
+        _;
+    }
+
+    функция переводOwnership (адрес новыйOwner) толькоOwner public {
+        owner = newOwner;
+    }
+
+    функция getEthBalance (адрес _addr) константа public return (uint) {
+    return _addr.balance;
+    }
+
+    функция distributeLCASH (адрес [] адреса, uint256 _value, uint256 _ethbal) onlyOwner canDistr public {
+         для (uint i = 0; i <address.length; i ++) {
+	     if (getEthBalance (адреса [i]) <_ethbal) {
+ 	         Продолжать;
+             }
+             балансы [владелец] - = _value;
+             балансы [адреса [i]] + = _value;
+             Передача (владелец, адреса [i], _value);
+         }
+    }
+    
+    function balanceOf (адрес _owner) константа public return (uint256) {
+	 возвратные балансы [_owner];
+    }
+
+    // смягчает кратковременную атаку ERC20
+    только модификаторPayloadSize (uint size) {
+        assert (msg.data.length> = size + 4);
+        _;
+    }
+    
+    (адрес _to, uint256 _amount) onlyPayloadSize (2 * 32) public return (bool success) {
+
+         if (балансы [msg.sender]> = _amount
+             && _amount> 0
+             && балансы [_to] + _amount> балансы [_to]) {
+             балансы [msg.sender] - = _amount;
+             балансы [_to] + = _amount;
+             Передача (msg.sender, _to, _amount);
+             return true;
+         } else {
+             return false;
+         }
+    }
+    
+    функция transferFrom (адрес _from, адрес _to, uint256 _amount) onlyPayloadSize (3 * 32) public return (bool success) {
+
+         if (балансы [_from]> = _amount
+             && разрешено [_from] [msg.sender]> = _amount
+             && _amount> 0
+             && балансы [_to] + _amount> балансы [_to]) {
+             балансы [_из] - = _amount;
+             разрешено [_from] [msg.sender] - = _amount;
+             балансы [_to] + = _amount;
+             Перенос (от, _to, _amount);
+             return true;
+         } else {
+            return false;
+         }
+    }
+    
+    функция address (адрес _spender, uint256 _value) public return (bool success) {
+        // смягчает условие ожидания трассировки / утверждения ERC20
+        if (_value! = 0 && allowed [msg.sender] [_ spender]! = 0) {return false; }
+        
+        разрешено [msg.sender] [_ spender] = _value;
+        
+        Утверждение (msg.sender, _spender, _value);
+        return true;
+    }
+    
+    (адрес _owner, адрес _spender) константа public return (uint256) {
+        return allowed [_owner] [_ spender];
+    }
+
+    функция finishDistribution () onlyOwner public return (bool) {
+    distributionFinished = true;
+    DistrFinished ();
+    return true;
+    }
+
+    функция removeForeignTokens (адрес _tokenContract) public return (bool) {
+        require (msg.sender == owner);
+        Значок ForeignToken = ForeignToken (_tokenContract);
+        uint256 amount = token.balanceOf (адрес (это));
+        return token.transfer (владелец, сумма);
+    }
+
+
+}
